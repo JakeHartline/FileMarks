@@ -1,0 +1,32 @@
+#!/bin/bash
+cd $HOME/Bookmarks || notify-send "Bookmarks folder is not found."
+
+#using pop-up messages for errors since we're not in terminal
+error() { notify-send "$1"; exit;}
+
+#if no arguments are provided
+[[ -z $1 ]] && error "No input, quitting."
+
+#put dots after url if it's longer than 40 characters
+[[ ${#1} > 40 ]] && dots="..."
+name=$(printf "" | dmenu -p "Name for: ${1:0:40}$dots") || exit
+
+#the loop for navigating folders
+while true; do
+	subdir=$(printf "./\\n../\\n$(ls -d */)" | dmenu -l 30 -p "Save to: $PWD/") || exit
+	cd $subdir || error "Couldn't cd into subdirectory"
+	[[ $subdir == "./" ]] && break	#exit loop when current folder is selected
+done
+#echo */ also outputs folders
+
+#text for the output file
+#link on a new line for easy yanking
+printf "#!/bin/bash
+link=\"
+$1
+\"
+\$BROWSER \$link
+" > $name || error "Failed to create bookmark file"
+
+chmod 766 "$name" || error "Failed to set permissions"
+notify-send "$name" "Saved to: $PWD"
